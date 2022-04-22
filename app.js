@@ -1,36 +1,49 @@
-const express = require("express"); // Import the package
-const http = require("http");
-const app = express(); // Execute the package
-const morgan = require("morgan"); // Import module morgan
-const hostname = "localhost";
-const port = 3000;
-const bodyParser = require("body-parser");
+var createError = require("http-errors");
+var express = require("express");
+var path = require("path");
+var cookieParser = require("cookie-parser");
+var logger = require("morgan");
 
-app.use(morgan("dev")); // Sử dụng morgan
-app.use(bodyParser.json());
+var indexRouter = require("./routes/index");
+var usersRouter = require("./routes/users");
 
-// Routes dish Router
-const dishRouter = require("./routes/dishRouter"); // Import module file routes
-app.use("/dishes", dishRouter); // Sử dụng file routes dishRouter
+var app = express();
 
-// Routes promo Router
-const promoRouter = require("./routes/promoRouter");
+var dishRouter = require("./routes/dishRouter");
+app.use("/dishes", dishRouter);
+
+var promoRouter = require("./routes/promoRouter");
 app.use("/promotions", promoRouter);
 
-// Routes leader Router
-const leaderRouter = require("./routes/leaderRouter");
-app.use("/leadership", leaderRouter);
+var leaderRouter = require("./routes/leaderRouter");
+app.use("/leaders", leaderRouter);
+// view engine setup
+app.set("views", path.join(__dirname, "views"));
+app.set("view engine", "jade");
 
-app.use(express.static(__dirname + "/public")); // Sử dụng static với tệp tĩnh
+app.use(logger("dev"));
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
+app.use(express.static(path.join(__dirname, "public")));
 
-app.use((req, res, next) => {
-  res.statusCode = 200; // Respone http status code
-  res.setHeader("Content-Type", "text/html");
-  res.end("<html><body><h1>This is Express server</h1></body></html>");
+app.use("/", indexRouter);
+app.use("/users", usersRouter);
+
+// catch 404 and forward to error handler
+app.use(function (req, res, next) {
+  next(createError(404));
 });
 
-const server = http.createServer(app);
+// error handler
+app.use(function (err, req, res, next) {
+  // set locals, only providing error in development
+  res.locals.message = err.message;
+  res.locals.error = req.app.get("env") === "development" ? err : {};
 
-server.listen(port, hostname, () => {
-  console.log(`Server running at http://${hostname}:${port}`);
+  // render the error page
+  res.status(err.status || 500);
+  res.render("error");
 });
+
+module.exports = app;
