@@ -17,6 +17,12 @@ const path = require("path");
 // Dựng server
 var app = express();
 
+var passport = require("passport");
+var authenticate = require("./authenticate");
+
+app.use(passport.initialize());
+app.use(passport.session());
+
 // Tạo phiên
 app.use(
   session({
@@ -31,44 +37,16 @@ app.use(
 // Yêu cầu được cấp quyền
 function auth(res, req, next) {
   // Kiểm tra phiên
-  console.log(req.session);
+  console.log(req.user);
 
   // Kiểm tra thông tin để cấp quyền
-  if (!req.session.user) {
-    var authHeader = req.headers.authorization;
-    console.log(authHeader);
-    var err = new Error("You are not authenticated");
-    res.setHeader("WWW-Authenticate", "Basic");
-    err.status = 401;
+  if (!req.user) {
+    // Báo lỗi nếu có
+    var err = new Error("You are not authenticated!");
+    err.status = 403;
     next(err);
-
-    var auth = new Buffer.from(authHeader.split(" ")[1], "base64")
-      .toString()
-      .split(":");
-
-    // Đọc username và password
-    var user = auth[0];
-    var pass = auth[1];
-
-    // Nếu người dùng là admin thì cho phép truy cập
-    if (user == "admin" && pass == "password") {
-      req.session.user = "admin";
-      next(); // Cho phép truy cập
-    } else {
-      // Nếu không thì báo lỗi
-      var err = new Error("You are not authenticated");
-      res.setHeader("WWW-Authenticate", "Basic");
-      err.status = 401;
-      next(err);
-    }
   } else {
-    if (req.session.user === "admin") {
-      console.log("req.session: ", req.session);
-    } else {
-      var err = new Error("You are not autheticated");
-      err.status = 401;
-      next(err);
-    }
+    next();
   }
 }
 
